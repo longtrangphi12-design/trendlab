@@ -1,0 +1,11 @@
+# Data and results stay out of Git
+data/
+results/
+*.nc
+*.tif
+
+# Python and Colab clutter
+__pycache__/
+*.egg-info/
+.ipynb_checkpoints/
+.pytest_cache/
