@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "trendlab: trend detection and robustness checks for gridded environmental time series"
+type: software
+authors:
+  - name: "[ĐIỀN: tên nhóm hoặc tên tác giả]"
+version: 0.1.0
+date-released: 2026-11-15
+license: MIT
+repository-code: "https://github.com/PTBK147/trendlab"
+abstract: >-
+  Python package and analysis scripts for detecting historical trends in gridded
+  time series (Mann-Kendall, Sen's slope, Hamed-Rao correction, FDR control) and
+  for checking how robust the detected trends are. Applied to GPM IMERG rainfall
+  over the Amazon basin, 2001-2024, for NASA Space Apps Challenge 2026
+  "Earth System Trend Detective".
