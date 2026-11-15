@@ -209,3 +209,106 @@ the Hamed-Rao type, block bootstrap) were not tested.
 
 Every simulation is seeded (`seed` argument). Tests in `tests/` check the
 formulas against hand-calculated values.
+
+## 7. Amazon application: data and preprocessing
+
+- Data: GPM IMERG Final V07 monthly, 0.1°, 2001-2024 (288 months). Unit mm/hr multiplied by real hours of each month (days_in_month x 24) gives mm/month; annual totals are the sum of 12 months, with NaN (no partial years) if any month is missing.
+- Basin mask: HydroBASINS level 3 (South America), main basin selected by area (about 6 million km2). Area weights are cos(latitude), normalised to sum to 1 inside the mask.
+- All cells inside the mask have at least 20 valid years out of 24 (min_valid = 20); 48,363 cells were tested.
+- Basin-mean rainfall: 2,173 mm/yr.
+
+## 8. Added tests (`trend_extra.py`)
+
+- Hamed-Rao (1998) variance correction of Mann-Kendall: Sen-detrended ranks, autocorrelation of ranks, lags kept where |rho_k| > 1.96/sqrt(n) (same bound at every lag, as in pymannkendall; other implementations may differ), Var*(S) = Var(S) x (1 + 2/(n(n-1)(n-2)) x sum (n-k)(n-k-1)(n-k-2) rho_k). If the factor is <= 0 (strong negative rank autocorrelation) the plain Mann-Kendall result is used and the cell is flagged `fallback`, so it is not dropped from the multiple-testing count.
+- Observed on real data: the factor has median 1.00 (min -0.85, max 3.15); 266 cells fell back to plain MK. With n = 24 the correction rarely changes a cell, so Hamed-Rao does not remove the autocorrelation limitation of section 5.
+- Multiple testing: Benjamini-Yekutieli (BH x sum_{i=1..m} 1/i) is the main rule, valid under any dependence between cells. Counts at alpha = 0.05 (48,363 cells): plain MK raw 13,357; Hamed-Rao raw 13,879; BH on Hamed-Rao 9,334; BY on Hamed-Rao 5,192. Neighbouring cells are strongly dependent (Moran's I of the Sen slope = 0.98), so the number of independent tests is far below 48,363 and BY is probably conservative.
+- Pettitt (1979) change-point test was computed as a diagnostic only; it is not used to decide the evidence class.
+
+## 9. Results and robustness (2001-2024)
+
+Evidence classes (rule: BY <= 0.05): decrease 5,187 cells (10.7% of basin area), increase 5 cells (0.0%), not enough evidence 43,171 cells (89.3%). Basin-mean series: Sen -7.0 mm/yr, Mann-Kendall p = 0.224, block-bootstrap 95% interval [-14.3, 1.3] (contains 0).
+
+Sensitivity (share of significant cells that keep their class / share with the same Sen sign):
+- drop 2005, 2010, 2015, 2016: 63.0% / 93.1%
+- drop 2001-2003: 59.8% / 86.7%
+- drop 2011-2013: 64.3% / 95.0%
+- drop 2022-2024: 14.8% / 70.1%
+
+Dropping three early or middle years keeps most of the signal; dropping the last three years removes most of it, so the result depends on 2022-2024 and is not explained by loss of power alone. The 2022-2024 scenario was added after seeing the first maps; the others were fixed beforehand.
+
+Minimum detectable slope (MDS) per cell, approximately 2.8 x residual SD / sqrt(n(n^2-1)/12) (5%, power 80%, optimistic: no FDR and no autocorrelation): median 21.8 mm/yr. The median absolute estimated slope is 9.8 mm/yr; only 12.5% of "not enough evidence" cells have an estimated slope at or above their MDS. In most grey cells the series is too short or too noisy to detect a trend of realistic size, so "not enough evidence" does not mean "no change".
+
+Sub-regions (latitude bands, chosen after viewing the maps; area-weighted mean series):
+
+| Band | Cells | Mean (mm/yr) | Sen (mm/yr) | p (Hamed-Rao) | Block bootstrap 95% | Hydrological year (Sen, p) |
+|---|---|---|---|---|---|---|
+| Whole basin | 48,363 | 2,173 | -7.0 | 0.224 | [-14.3, 1.3] | -7.4, 0.102 |
+| North (lat >= -3) | 14,343 | 2,667 | -0.3 | 0.941 | [-7.1, 5.9] | 0.3, 1.000 |
+| Middle (-10 <= lat < -3) | 19,330 | 2,204 | -12.9 | 0.035 | [-23.6, -1.8] | -9.2, 0.081 |
+| South (lat < -10) | 14,690 | 1,637 | -10.4 | 0.045 | [-18.4, -1.8] | -11.2, 0.035 |
+
+Dropping any three consecutive years changes the sign of the basin slope only for 2022-2024; the middle and south slopes stay negative in all 22 windows. After correcting the three sub-region p-values for multiple testing (Benjamini-Hochberg, m = 3) the middle and south bands both reach about 0.07, above 0.05. We therefore describe them as weak signals, not as established trends. The hydrological year starts at the driest month of each band (n = 23 years).
+
+Seasonality (exploratory): Oliver's PCI, amplitude and phase of the annual harmonic were computed per cell and per year and tested like annual totals (48,005 of 48,363 cells have a clear single annual wave, R2 >= 0.5). Share of significant cells that keep their class when dropping the drought years / 2022-2024: PCI 31.4% / 32.4%, amplitude 15.0% / 8.2%, phase 14.9% / 23.8%; each layer has under 2% of basin area significant, the median phase slope is 0.33 days per decade, and significant phase cells are split almost evenly between earlier and later (158 vs 123). We report no robust change in seasonality. The amplitude layer was run in absolute units (mm/month), which is correlated with annual totals; a relative-amplitude version was not run.
+
+## 10. Additional limitations
+
+- n = 24 years: low power (see MDS) and strong dependence of the result on the last three years.
+- Cells are spatially dependent; counts of significant cells overstate independent evidence.
+- IMERG is a satellite estimate calibrated with gauges; whether sparse gauges in the south-central basin and near the Andes affect the signal was not tested.
+- The calendar year splits the southern wet season; a hydrological-year check was done only for the latitude bands, not per cell.
+- Latitude bands were defined after viewing the maps.
+- No attribution of causes (climate change, ENSO, land use) is made; the ENSO regression branch was not implemented.
+
+## 11. Explanatory branch: ocean indices (exploratory, descriptive)
+
+**Question.** How much of the year-to-year variability of annual rainfall is statistically associated with two ocean indices, and does the trend remain after removing that association?
+
+**Indices.** Nino 3.4 (box 170W–120W, 5S–5N) and tropical North Atlantic (TNA, box 57.5W–15W, 5.5N–23.5N), from MERRA-2 monthly skin temperature (M2TMNXSLV). Monthly anomalies relative to the 2001–2024 monthly climatology, averaged over each calendar year (same year as rainfall, no lag), then standardised. Neither index has a trend over 2001–2024 (Nino 3.4: Sen −0.002 SD/yr, p = 0.98; TNA: +0.023 SD/yr, p = 0.22). The two are nearly uncorrelated (r = −0.07; VIF = 1.01).
+
+**A. Variability.** OLS of detrended annual rainfall on the detrended indices, per cell (48,363 cells) and per region. Reported: R², adjusted R², and cross-validated R² (leave-3-consecutive-years-out). Median R² = 0.29, adjusted 0.22, cross-validated 0.02; the cross-validated R² is positive in 54.4% of cells. At the cell level, the two indices therefore have weak predictive skill. Region-level fits are higher (in-sample R² 0.46–0.58) but based on 24 points.
+
+**Region coefficients (mm per 1 SD, uncorrected p).** Whole basin: Nino 3.4 −43.8 (p = 0.029), TNA −96.2 (p = 5.7e-5). North: −77.3 (0.0013), −77.4 (0.0016). Middle: −37.6 (0.169), −117 (3.0e-4). South: −18.5 (0.372), −87.2 (4.1e-4). Cells where TNA has the larger coefficient cover 35.4% of the basin area, Nino 3.4 19.2%, and 45.4% have no cross-validated skill (CV R² ≤ 0).
+
+**B. Trend after adjustment.** Rainfall minus the fitted index contributions (model: rainfall ~ year + Nino 3.4 + TNA; "joint", main), then Sen's slope, Mann-Kendall with Hamed-Rao variance correction and Benjamini-Yekutieli FDR as in the main analysis. Sensitivity "naive": coefficients from rainfall ~ Nino 3.4 + TNA without a year term.
+
+| Result | Joint | Naive |
+|---|---|---|
+| Decreasing cells with evidence (main: 5,187) that remain decreasing | 4,479 (86.4%) | 3,836 (74.0%) |
+| Newly decreasing / newly increasing cells | 1,480 / 300 | 1,201 / 171 |
+| Decreasing area after adjustment (main: 10.7%) | 12.3% | 10.4% |
+
+Newly significant cells reflect reduced noise (more statistical power), not a new trend.
+
+| Region | Sen raw (mm/yr), p | Sen adjusted (mm/yr), p |
+|---|---|---|
+| Whole basin | −6.97, 0.224 | −6.38, 0.0185 |
+| North | −0.34, 0.941 | −1.39, 0.785 |
+| Middle | −12.9, 0.035 | −9.72, 0.056 |
+| South | −10.4, 0.045 | −9.48, 0.0059 |
+
+**Limits.** Statistical association is not causation. Coefficients are estimated from the same 24 points that are then tested, so adjusted p-values are slightly optimistic. Four regions and two indices means several tests; no multiplicity correction is applied to region tables. The index averaging window (calendar year, no lag) was fixed before running.
+
+## 12. Does the signal depend on 2022–2024? (post hoc checks)
+
+**Expanding window.** Whole-basin Sen slope for series 2001–Y: +5.19 (Y = 2015), +0.93 (2021), −0.68 (2022), −3.42 (2023), −6.97 mm/yr (2024). No window has p < 0.05 (Hamed-Rao). The basin-wide slope turns negative only when 2022–2024 are included.
+
+**Drop 2022–2024, with and without adjustment** (post hoc: chosen after seeing section 11).
+
+| Quantity | Raw | Adjusted |
+|---|---|---|
+| Main decreasing cells still decreasing (of 5,187) | 771 (14.9%) | 1,762 (34.0%) |
+| Decreasing area, 2001–2021 | 1.7% | 4.2% |
+
+| Region, 2001–2021 | Sen raw (mm/yr), p | Sen adjusted (mm/yr), p |
+|---|---|---|
+| Whole basin | +0.92, 0.743 | −2.28, 0.487 |
+| North | +3.32, 0.273 | +0.65, 0.88 |
+| Middle | −2.55, 0.635 | −4.32, 0.526 |
+| South | −1.75, 0.608 | −6.34, 0.097 |
+
+**Reading.** The basin-wide decline in the full record, including the adjusted one (p = 0.0185), is not supported without 2022–2024 (adjusted p = 0.487). The south is the only region whose adjusted trend remains clearly negative (−6.3 mm/yr, p = 0.097), still below the 0.05 level. With 21 years, power is low: "not enough evidence" does not mean "no change". A 24-year record cannot distinguish an extreme episode from the start of a persistent shift.
+
+## 13. Dry months per year (exploratory, not adjusted for sensitivity to threshold)
+
+A month is dry if rainfall < 100 mm/month (threshold to be cited from the literature; sensitivity to 90/110 mm not yet tested). Basin mean: 3.61 dry months per year. Cells with evidence of more dry months: 1,415 (2.9% of area); fewer: 18 (0.0%). Of the 5,187 cells with decreasing annual rainfall, 929 (17.9%) also have more dry months. Regions (change per decade, uncorrected p): whole basin +0.26 (0.011); north +0.03 (0.86); middle +0.50 (0.0008); south +0.31 (0.16). Not yet checked for dependence on 2022–2024.

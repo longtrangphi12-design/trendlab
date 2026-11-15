@@ -1,5 +1,6 @@
 # Data and results stay out of Git
-data/
+data/*
+!data/processed/
 results/
 *.nc
 *.tif

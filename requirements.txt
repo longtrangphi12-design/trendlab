@@ -1,0 +1,11 @@
+numpy
+scipy
+pandas
+xarray
+netCDF4
+matplotlib
+geopandas
+regionmask
+earthaccess
+plotly
+streamlit
