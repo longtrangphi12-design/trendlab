@@ -10,3 +10,10 @@ __pycache__/
 *.egg-info/
 .ipynb_checkpoints/
 .pytest_cache/
+!data/processed/trend_cells.nc
+!data/processed/robustness_cells.nc
+!data/processed/annual.nc
+!data/processed/magnitude.nc
+!data/processed/dry_months_cells.nc
+!data/processed/drivers_cells.nc
+!data/processed/adjusted_drop_cells.nc
