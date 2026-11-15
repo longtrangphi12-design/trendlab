@@ -5,7 +5,7 @@ Rules: grey is never "no change"; direction and evidence are separate;
 exploratory layers are marked "Exploratory".
 """
 
-APP_TITLE = "Trend Explorer"
+APP_TITLE = "MarqLens"
 APP_SUBTITLE = "Historical rainfall trends · Amazon River basin · 2001–2024 · not a forecast"
 
 GREY_LONG = "Not enough evidence to detect a trend (does not mean no change)"

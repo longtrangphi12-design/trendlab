@@ -1,4 +1,4 @@
-# Trend Explorer – Streamlit app
+# MarqLens – Amazon rainfall trend explorer (Streamlit app)
 
 Historical rainfall trends, Amazon River basin, 2001–2024 (not a forecast).
 
