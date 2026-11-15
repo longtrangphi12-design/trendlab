@@ -3,12 +3,16 @@
 Run from the repo root:   streamlit run app/streamlit_app.py
 """
 import streamlit as st
+from pathlib import Path
+ASSETS = Path(__file__).parent / "assets"
+LOGO = str(ASSETS / "marqlens_logo.jpg")
 
 from lib import data
 from lib import text as T
 
-st.set_page_config(page_title=T.APP_TITLE, page_icon="📈", layout="wide",
+st.set_page_config(page_title=T.APP_TITLE, page_icon="LOGO", layout="wide",
                    initial_sidebar_state="collapsed")
+st.logo(LOGO, size="large")
 
 # Small shared style: cards, tiles, badges (used through st.markdown(..., unsafe_allow_html=True))
 st.markdown("""
